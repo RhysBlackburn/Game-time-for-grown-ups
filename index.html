@@ -15,7 +15,7 @@
     }
     h1 {
       text-align: center;
-      font-size: 1.8rem;
+      font-size: 1.6rem;
       margin-bottom: 0.3em;
     }
     .logo {
@@ -49,19 +49,15 @@
       background-color: #0b64bf;
       border-radius: 6px;
       overflow: hidden;
-      font-size: 0.9rem;
     }
     th, td {
       border: 1px solid #003a78;
-      padding: 8px;
+      padding: 6px;
       text-align: center;
+      font-size: 0.9rem;
     }
     th {
       background: #0f7eea;
-    }
-    .tick {
-      color: white;
-      font-size: 1.2rem;
     }
     button {
       width: 100%;
@@ -84,44 +80,58 @@
       margin-top: 10px;
       font-weight: bold;
     }
-    .lockBtn {
-      background-color: gold;
-      color: black;
-      font-weight: bold;
-      padding: 6px 10px;
+    #combinedSection {
+      display: none;
+    }
+    .locked-in {
+      background-color: gold !important;
+    }
+    .all-available {
+      background-color: green !important;
+      color: white;
+    }
+    .tick {
+      color: white;
+    }
+    #chatBox {
+      margin-top: 30px;
+    }
+    #chatMessages {
+      background-color: #0b64bf;
+      padding: 10px;
+      height: 120px;
+      overflow-y: auto;
+      margin-bottom: 10px;
+      border-radius: 6px;
+    }
+    #chatInput {
+      width: calc(100% - 90px);
+      padding: 8px;
       border: none;
       border-radius: 4px;
-      cursor: pointer;
+      margin-right: 10px;
     }
-    .locked {
-      background-color: gold !important;
-      color: black;
+    #sendBtn {
+      width: 70px;
+      padding: 8px;
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      border-radius: 4px;
     }
-    #combinedResults table {
-      font-size: 0.85rem;
-    }
-    .confetti-msg {
-      text-align: center;
-      font-weight: bold;
-      font-size: 1.2rem;
-      color: gold;
-      animation: fade 2s ease-out;
-    }
-    @keyframes fade {
-      from { opacity: 1; }
-      to { opacity: 0; }
+    .day-slot {
+      font-size: 0.8rem;
     }
   </style>
 </head>
 <body>
 
-<img src="https://www.highsnobiety.com/static-assets/dato/1682552232-playstation-5-release-date-info-00.jpg" class="logo" />
-
+<img class="logo" src="https://www.highsnobiety.com/static-assets/dato/1682552232-playstation-5-release-date-info-00.jpg" />
 <h1>Game Time for Grown Ups</h1>
-  
-<div class="user-select" aria-label="Select your name">
+
+<div class="user-select">
   Select your name:
-  <select id="userSelect" aria-label="User name select">
+  <select id="userSelect">
     <option value="Rhys">Rhys</option>
     <option value="Kris">Kris</option>
     <option value="Matty">Matty</option>
@@ -140,212 +150,224 @@
     </thead>
     <tbody id="formBody"></tbody>
   </table>
-
   <button id="saveBtn" type="submit">Save Availability</button>
 </form>
 
 <div id="status"></div>
 
-<h2>Combined Availability</h2>
-<div id="combinedResults"></div>
+<div id="combinedSection">
+  <h2>Combined Availability</h2>
+  <div id="combinedResults"></div>
+  <button id="resetBtn" type="button">Reset Week</button>
+</div>
 
-<button id="resetBtn" type="button">Reset Week</button>
+<div id="chatBox">
+  <h2>Group Chat</h2>
+  <div id="chatMessages"></div>
+  <input type="text" id="chatInput" placeholder="Enter message" />
+  <button id="sendBtn">Send</button>
+</div>
 
-<!-- Firebase -->
+<canvas id="confetti-canvas" style="position: fixed; pointer-events: none; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
+
+<!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-<!-- Confetti animation -->
 <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyD8Za1qEgeVqQY-ZPoAVxbQxNk2gIX_2ic",
-    authDomain: "game-time-for-grown-ups.firebaseapp.com",
-    databaseURL: "https://game-time-for-grown-ups-default-rtdb.europe-west1.firebasedatabase.app",
-    projectId: "game-time-for-grown-ups",
-    storageBucket: "game-time-for-grown-ups.firebasestorage.app",
-    messagingSenderId: "240776591169",
-    appId: "1:240776591169:web:ecd7125da1acf789ed93c0"
-  };
+const firebaseConfig = {
+  apiKey: "AIzaSyD8Za1qEgeVqQY-ZPoAVxbQxNk2gIX_2ic",
+  authDomain: "game-time-for-grown-ups.firebaseapp.com",
+  databaseURL: "https://game-time-for-grown-ups-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "game-time-for-grown-ups",
+  storageBucket: "game-time-for-grown-ups.firebasestorage.app",
+  messagingSenderId: "240776591169",
+  appId: "1:240776591169:web:ecd7125da1acf789ed93c0",
+  measurementId: "G-XFKFZT1FMG"
+};
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-  firebase.initializeApp(firebaseConfig);
-  const db = firebase.database();
+const users = ["Rhys", "Kris", "Matty", "Granty"];
+const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+const slots = ["Afternoon", "Evening"];
 
-  const users = ["Rhys", "Kris", "Matty", "Granty"];
-  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-  const slots = ["Afternoon", "Evening"];
+const formBody = document.getElementById("formBody");
+const userSelect = document.getElementById("userSelect");
+const availabilityForm = document.getElementById("availabilityForm");
+const statusDiv = document.getElementById("status");
+const combinedResults = document.getElementById("combinedResults");
+const resetBtn = document.getElementById("resetBtn");
+const combinedSection = document.getElementById("combinedSection");
+const chatMessages = document.getElementById("chatMessages");
+const chatInput = document.getElementById("chatInput");
+const sendBtn = document.getElementById("sendBtn");
 
-  const formBody = document.getElementById("formBody");
-  const userSelect = document.getElementById("userSelect");
-  const availabilityForm = document.getElementById("availabilityForm");
-  const statusDiv = document.getElementById("status");
-  const combinedResults = document.getElementById("combinedResults");
-  const resetBtn = document.getElementById("resetBtn");
-
-  function buildForm() {
-    formBody.innerHTML = "";
-    for (const day of days) {
-      const tr = document.createElement("tr");
-      const dayTd = document.createElement("td");
-      dayTd.textContent = day;
-      tr.appendChild(dayTd);
-
-      for (const slot of slots) {
-        const td = document.createElement("td");
-        const checkbox = document.createElement("input");
-        checkbox.type = "checkbox";
-        checkbox.name = `${day}_${slot}`;
-        td.appendChild(checkbox);
-        tr.appendChild(td);
-      }
-
-      formBody.appendChild(tr);
+function buildForm() {
+  formBody.innerHTML = "";
+  for (const day of days) {
+    const tr = document.createElement("tr");
+    const dayTd = document.createElement("td");
+    dayTd.textContent = day;
+    tr.appendChild(dayTd);
+    for (const slot of slots) {
+      const td = document.createElement("td");
+      const checkbox = document.createElement("input");
+      checkbox.type = "checkbox";
+      checkbox.name = `${day}_${slot}`;
+      td.appendChild(checkbox);
+      tr.appendChild(td);
     }
+    formBody.appendChild(tr);
   }
+}
 
-  function loadUserData(user) {
-    db.ref(`availability/${user}`).once("value").then(snapshot => {
-      const data = snapshot.val() || {};
-      for (const day of days) {
-        for (const slot of slots) {
-          const checkbox = availabilityForm.elements[`${day}_${slot}`];
-          checkbox.checked = !!data[`${day}_${slot}`];
-        }
-      }
-    });
-  }
-
-  availabilityForm.addEventListener("submit", e => {
-    e.preventDefault();
-    const user = userSelect.value;
-    const userData = {};
+function loadUserData(user) {
+  db.ref(`availability/${user}`).once("value").then(snapshot => {
+    const data = snapshot.val() || {};
     for (const day of days) {
       for (const slot of slots) {
         const checkbox = availabilityForm.elements[`${day}_${slot}`];
-        userData[`${day}_${slot}`] = checkbox.checked;
+        checkbox.checked = !!data[`${day}_${slot}`];
       }
     }
-    db.ref(`availability/${user}`).set(userData)
-      .then(() => {
-        statusDiv.textContent = "Availability saved!";
-      })
-      .catch(err => {
-        statusDiv.textContent = "Error saving data: " + err;
-      });
   });
+}
 
-  function showCombinedData(allData, lockedData) {
-    if (!allData) {
-      combinedResults.innerHTML = "";
-      return;
+availabilityForm.addEventListener("submit", e => {
+  e.preventDefault();
+  const user = userSelect.value;
+  const userData = {};
+  for (const day of days) {
+    for (const slot of slots) {
+      const checkbox = availabilityForm.elements[`${day}_${slot}`];
+      userData[`${day}_${slot}`] = checkbox.checked;
     }
+  }
+  db.ref(`availability/${user}`).set(userData)
+    .then(() => statusDiv.textContent = "Availability saved!");
+});
 
-    const table = document.createElement("table");
-    const thead = document.createElement("thead");
-    const headerRow = document.createElement("tr");
-
-    headerRow.appendChild(document.createElement("th")); // day+slot
-    for (const user of users) {
-      const th = document.createElement("th");
-      th.textContent = user;
-      headerRow.appendChild(th);
-    }
-    const lockHeader = document.createElement("th");
-    lockHeader.textContent = "Lock In";
-    headerRow.appendChild(lockHeader);
-    const countHeader = document.createElement("th");
-    countHeader.textContent = "Count";
-    headerRow.appendChild(countHeader);
-
-    thead.appendChild(headerRow);
-    table.appendChild(thead);
-
-    const tbody = document.createElement("tbody");
-
-    for (const day of days) {
-      for (const slot of slots) {
-        const tr = document.createElement("tr");
-        const key = `${day}_${slot}`;
-        const isLocked = lockedData && lockedData[key];
-
-        const labelTd = document.createElement("td");
-        labelTd.textContent = `${day} ${slot}`;
-        labelTd.style.fontSize = "0.8rem";
-        tr.appendChild(labelTd);
-
-        let count = 0;
-
-        for (const user of users) {
-          const td = document.createElement("td");
-          const available = allData[user] && allData[user][key];
-          if (available) {
-            td.innerHTML = '<span class="tick">✔️</span>';
-            count++;
-          }
-          tr.appendChild(td);
-        }
-
-        const lockTd = document.createElement("td");
-        const btn = document.createElement("button");
-        btn.textContent = "Lock In";
-        btn.className = "lockBtn";
-        btn.onclick = () => lockRow(key);
-        lockTd.appendChild(btn);
-        tr.appendChild(lockTd);
-
-        const countTd = document.createElement("td");
-        countTd.textContent = count;
-        if (count === 4) tr.style.backgroundColor = "#2ecc71";
-        tr.appendChild(countTd);
-
-        if (isLocked) {
-          tr.classList.add("locked");
-        }
-
-        tr.setAttribute("data-key", key);
-        tbody.appendChild(tr);
-      }
-    }
-
-    table.appendChild(tbody);
-    combinedResults.innerHTML = "";
-    combinedResults.appendChild(table);
+function showCombinedData(allData) {
+  if (!allData || Object.keys(allData).length === 0) {
+    combinedSection.style.display = "none";
+    return;
   }
 
-  function lockRow(key) {
-    db.ref(`locked/${key}`).set(true).then(() => {
-      const msg = document.createElement("div");
-      msg.className = "confetti-msg";
-      msg.textContent = "Let's f***ing go!";
-      combinedResults.prepend(msg);
-      confetti();
+  combinedSection.style.display = "block";
+  const table = document.createElement("table");
+  const thead = document.createElement("thead");
+  const headerRow = document.createElement("tr");
+  headerRow.innerHTML = `<th></th>${users.map(u => `<th>${u}</th>`).join("")}<th>#</th><th></th>`;
+  thead.appendChild(headerRow);
+  table.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+
+  for (const day of days) {
+    for (const slot of slots) {
+      const tr = document.createElement("tr");
+      const key = `${day}_${slot}`;
+      const labelTd = document.createElement("td");
+      labelTd.className = "day-slot";
+      labelTd.textContent = `${day} ${slot}`;
+      tr.appendChild(labelTd);
+
+      let count = 0;
+      for (const user of users) {
+        const td = document.createElement("td");
+        const available = allData[user]?.[key];
+        if (available) {
+          td.innerHTML = '<span class="tick">✔️</span>';
+          count++;
+        }
+        tr.appendChild(td);
+      }
+
+      const countTd = document.createElement("td");
+      countTd.textContent = count;
+      tr.appendChild(countTd);
+
+      const lockTd = document.createElement("td");
+      const lockBtn = document.createElement("button");
+      lockBtn.textContent = "Lock in?";
+      lockBtn.style.padding = "6px";
+      lockBtn.onclick = () => {
+        db.ref(`locked/${key}`).set(true);
+        triggerConfetti();
+        alert("Let’s fucking go!");
+      };
+      lockTd.appendChild(lockBtn);
+      tr.appendChild(lockTd);
+
+      if (count === 4) tr.classList.add("all-available");
+
+      db.ref(`locked/${key}`).once("value", snap => {
+        if (snap.val()) tr.classList.add("locked-in");
+      });
+
+      tbody.appendChild(tr);
+    }
+  }
+
+  table.appendChild(tbody);
+  combinedResults.innerHTML = "";
+  combinedResults.appendChild(table);
+}
+
+db.ref("availability").on("value", snapshot => {
+  showCombinedData(snapshot.val());
+});
+
+userSelect.addEventListener("change", () => {
+  loadUserData(userSelect.value);
+  statusDiv.textContent = "";
+});
+
+resetBtn.addEventListener("click", () => {
+  if (confirm("Are you sure you want to reset everything for the week?")) {
+    users.forEach(user => db.ref(`availability/${user}`).remove());
+    db.ref("locked").remove();
+    db.ref("chat").remove();
+    chatMessages.innerHTML = "";
+    statusDiv.textContent = "All availability and chat has been reset.";
+    buildForm();
+  }
+});
+
+// Chat
+sendBtn.addEventListener("click", () => {
+  const user = userSelect.value;
+  const msg = chatInput.value.trim();
+  if (!msg) return;
+  const time = Date.now();
+  db.ref(`chat/${time}`).set({ user, msg });
+  chatInput.value = "";
+});
+
+db.ref("chat").on("value", snapshot => {
+  const data = snapshot.val();
+  chatMessages.innerHTML = "";
+  if (data) {
+    Object.values(data).forEach(({ user, msg }) => {
+      const p = document.createElement("p");
+      p.innerHTML = `<strong>${user}:</strong> ${msg}`;
+      chatMessages.appendChild(p);
     });
   }
+});
 
-  db.ref().on("value", snapshot => {
-    const data = snapshot.val() || {};
-    showCombinedData(data.availability, data.locked);
+function triggerConfetti() {
+  confetti({
+    particleCount: 100,
+    spread: 100,
+    origin: { y: 0.6 },
   });
+}
 
-  userSelect.addEventListener("change", () => {
-    loadUserData(userSelect.value);
-    statusDiv.textContent = "";
-  });
-
-  resetBtn.addEventListener("click", () => {
-    if (confirm("Are you sure you want to reset all availability and lock-ins for the week?")) {
-      users.forEach(user => {
-        db.ref(`availability/${user}`).remove();
-      });
-      db.ref(`locked`).remove();
-      statusDiv.textContent = "All availability and lock-ins have been reset.";
-      buildForm();
-    }
-  });
-
-  buildForm();
-  loadUserData(userSelect.value);
+buildForm();
+loadUserData(userSelect.value);
 </script>
 
 </body>
