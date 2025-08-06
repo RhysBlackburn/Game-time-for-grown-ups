@@ -7,289 +7,39 @@
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: #0d1b2a;
-      color: white;
       padding: 20px;
       max-width: 600px;
       margin: auto;
+      background: #0a0f2c;
+      color: #ffffff;
     }
-
     h1 {
       text-align: center;
       color: #61dafb;
     }
-
-    .logo {
-      display: flex;
-      justify-content: center;
-      margin-bottom: 10px;
-    }
-
-    .logo img {
-      width: 80px;
-    }
-
     label {
       display: inline-block;
       margin-right: 10px;
     }
-
     .user-select {
       margin-bottom: 20px;
       font-weight: bold;
     }
-
-    select {
-      background: #1b263b;
-      color: white;
-      border: 1px solid #61dafb;
-      padding: 5px;
-      border-radius: 5px;
-    }
-
     table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 20px;
+      background-color: #1f2a44;
     }
-
     th, td {
-      border: 1px solid #415a77;
+      border: 1px solid #3b4a6b;
       padding: 8px;
       text-align: center;
     }
-
     th {
-      background: #1b263b;
+      background: #1e3a8a;
     }
-
     button {
-      padding: 10px;
+      padding: 10px 15px;
       font-size: 1rem;
-      background: #1f7aec;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      width: 100%;
-    }
-
-    button:hover {
-      background: #1661c0;
-    }
-
-    #status {
-      text-align: center;
-      margin-top: 10px;
-      font-weight: bold;
-    }
-
-    #combinedResults table {
-      background: #1b263b;
-    }
-  </style>
-</head>
-<body>
-
-  <div class="logo">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/PlayStation_logo.svg/256px-PlayStation_logo.svg.png" alt="PS5 Logo">
-  </div>
-
-  <h1>Game Time for Grown Ups</h1>
-
-  <div class="user-select">
-    Select your name:
-    <select id="userSelect">
-      <option value="Rhys">Rhys</option>
-      <option value="Kris">Kris</option>
-      <option value="Matty">Matty</option>
-      <option value="Granty">Granty</option>
-    </select>
-  </div>
-
-  <form id="availabilityForm">
-    <table>
-      <thead>
-        <tr>
-          <th>Day</th>
-          <th>Afternoon</th>
-          <th>Evening</th>
-        </tr>
-      </thead>
-      <tbody id="formBody">
-        <!-- Populated by JS -->
-      </tbody>
-    </table>
-
-    <button type="submit">Save Availability</button>
-  </form>
-
-  <div id="status"></div>
-
-  <h2>Combined Availability</h2>
-  <div id="combinedResults"></div>
-
-  <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyD8Za1qEgeVqQY-ZPoAVxbQxNk2gIX_2ic",
-      authDomain: "game-time-for-grown-ups.firebaseapp.com",
-      databaseURL: "https://game-time-for-grown-ups-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "game-time-for-grown-ups",
-      storageBucket: "game-time-for-grown-ups.firebasestorage.app",
-      messagingSenderId: "240776591169",
-      appId: "1:240776591169:web:ecd7125da1acf789ed93c0",
-      measurementId: "G-XFKFZT1FMG"
-    };
-
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    const users = ["Rhys", "Kris", "Matty", "Granty"];
-    const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    const slots = ["Afternoon", "Evening"];
-
-    const formBody = document.getElementById("formBody");
-    const userSelect = document.getElementById("userSelect");
-    const availabilityForm = document.getElementById("availabilityForm");
-    const statusDiv = document.getElementById("status");
-    const combinedResults = document.getElementById("combinedResults");
-
-    function buildForm() {
-      formBody.innerHTML = "";
-      for (const day of days) {
-        const tr = document.createElement("tr");
-        const dayTd = document.createElement("td");
-        dayTd.textContent = day;
-        tr.appendChild(dayTd);
-
-        for (const slot of slots) {
-          const td = document.createElement("td");
-          const checkbox = document.createElement("input");
-          checkbox.type = "checkbox";
-          checkbox.name = `${day}_${slot}`;
-          td.appendChild(checkbox);
-          tr.appendChild(td);
-        }
-
-        formBody.appendChild(tr);
-      }
-    }
-
-    function loadUserData(user) {
-      db.ref(`availability/${user}`).once("value").then(snapshot => {
-        const data = snapshot.val() || {};
-        for (const day of days) {
-          for (const slot of slots) {
-            const checkbox = availabilityForm.elements[`${day}_${slot}`];
-            checkbox.checked = !!data[`${day}_${slot}`];
-          }
-        }
-      });
-    }
-
-    availabilityForm.addEventListener("submit", e => {
-      e.preventDefault();
-      const user = userSelect.value;
-      const userData = {};
-      for (const day of days) {
-        for (const slot of slots) {
-          const checkbox = availabilityForm.elements[`${day}_${slot}`];
-          userData[`${day}_${slot}`] = checkbox.checked;
-        }
-      }
-      db.ref(`availability/${user}`).set(userData)
-        .then(() => {
-          statusDiv.textContent = "Availability saved!";
-        })
-        .catch(err => {
-          statusDiv.textContent = "Error saving data: " + err;
-        });
-    });
-
-    function showCombinedData(allData) {
-      if (!allData) {
-        combinedResults.textContent = "No availability data yet.";
-        return;
-      }
-
-      const table = document.createElement("table");
-      const thead = document.createElement("thead");
-      const headerRow = document.createElement("tr");
-      headerRow.appendChild(document.createElement("th"));
-
-      for (const user of users) {
-        const th = document.createElement("th");
-        th.textContent = user;
-        headerRow.appendChild(th);
-      }
-      thead.appendChild(headerRow);
-      table.appendChild(thead);
-
-      const tbody = document.createElement("tbody");
-
-      for (const day of days) {
-        for (const slot of slots) {
-          const tr = document.createElement("tr");
-          const labelTd = document.createElement("td");
-          labelTd.textContent = `${day} ${slot}`;
-          tr.appendChild(labelTd);
-
-          for (const user of users) {
-            const td = document.createElement("td");
-            const available = allData[user] && allData[user][`${day}_${slot}`];
-            td.textContent = available ? "✔️" : "";
-            td.style.textAlign = "center";
-            tr.appendChild(td);
-          }
-
-          tbody.appendChild(tr);
-        }
-      }
-
-      table.appendChild(tbody);
-      combinedResults.innerHTML = "";
-      combinedResults.appendChild(table);
-    }
-
-    db.ref("availability").on("value", snapshot => {
-      showCombinedData(snapshot.val());
-    });
-
-    userSelect.addEventListener("change", () => {
-      loadUserData(userSelect.value);
-      statusDiv.textContent = "";
-    });
-
-    buildForm();
-    loadUserData(userSelect.value);
-
-    // Reset availability at Sunday 11PM GMT
-    function resetAvailabilityIfNeeded() {
-      const now = new Date();
-      const gmtNow = new Date(now.toUTCString().substr(0, 25));
-      const lastResetRef = db.ref("lastReset");
-
-      lastResetRef.once("value").then(snapshot => {
-        const lastReset = snapshot.val();
-        const nowIso = gmtNow.toISOString();
-
-        const isSunday = gmtNow.getUTCDay() === 0; // Sunday
-        const isLate = gmtNow.getUTCHours() >= 23;
-
-        if (isSunday && isLate && (!lastReset || lastReset < nowIso.substr(0, 10))) {
-          db.ref("availability").remove();
-          lastResetRef.set(nowIso.substr(0, 10));
-          console.log("Availability reset at Sunday 11PM GMT");
-        }
-      });
-    }
-
-    resetAvailabilityIfNeeded();
-  </script>
-
-</body>
-</html>
+      background: #0070f3;
