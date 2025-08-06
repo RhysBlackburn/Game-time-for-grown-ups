@@ -136,12 +136,15 @@
       margin-bottom: 5px;
     }
 
-    input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      border: none;
-      border-radius: 5px;
-    }
+input[type="text"] {
+  width: calc(100% - 4px);
+  box-sizing: border-box;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
   </style>
 </head>
 <body>
@@ -338,15 +341,18 @@
     statusDiv.textContent = "";
   });
 
-  resetBtn.addEventListener("click", () => {
-    if (confirm("Are you sure you want to reset all availability for the week?")) {
-      users.forEach(user => {
-        db.ref(`availability/${user}`).remove();
-      });
-      statusDiv.textContent = "All availability has been reset.";
-      buildForm();
-    }
-  });
+resetBtn.addEventListener("click", () => {
+  if (confirm("Are you sure you want to reset all availability and clear the chat for the week?")) {
+    users.forEach(user => {
+      db.ref(`availability/${user}`).remove();
+    });
+    db.ref("chat").remove(); // Delete chat messages
+    statusDiv.textContent = "All availability and chat messages have been reset.";
+    buildForm();
+    messagesDiv.innerHTML = ""; // Clear chat box visually
+  }
+});
+
 
   // Build the form initially
   buildForm();
