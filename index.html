@@ -6,12 +6,12 @@
   <title>Game Time for Grown Ups</title>
   <style>
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: Arial, sans-serif;
       padding: 20px;
       max-width: 600px;
       margin: auto;
-      background: #0a0f2c;
-      color: #ffffff;
+      background: #0a0a23;
+      color: white;
     }
     h1 {
       text-align: center;
@@ -25,55 +25,49 @@
       margin-bottom: 20px;
       font-weight: bold;
     }
+    select {
+      padding: 5px;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
       margin-bottom: 20px;
-      background-color: #1f2a44;
     }
     th, td {
-      border: 1px solid #3b4a6b;
+      border: 1px solid #444;
       padding: 8px;
       text-align: center;
     }
     th {
-      background: #1e3a8a;
+      background: #1a1a3d;
     }
     button {
-      padding: 10px 15px;
+      padding: 10px;
       font-size: 1rem;
       background: #0070f3;
       color: white;
       border: none;
       border-radius: 5px;
       cursor: pointer;
-    }
-    button:hover {
-      background: #005ad1;
+      width: 100%;
+      margin-top: 10px;
     }
     #status {
       text-align: center;
       margin-top: 10px;
       font-weight: bold;
+      color: #90ee90;
     }
-    #resetButton {
-      background: #e60000;
-      margin-top: 10px;
-    }
-    .logo {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-    .logo img {
-      width: 80px;
+    #logo {
+      display: block;
+      margin: 0 auto 20px auto;
+      max-width: 100px;
     }
   </style>
 </head>
 <body>
 
-  <div class="logo">
-    <img src="https://upload.wikimedia.org/wikipedia/commons/5/5b/PlayStation_logo_%282020%29.svg" alt="PS5 Logo">
-  </div>
+  <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/PlayStation_logo.svg/256px-PlayStation_logo.svg.png" alt="PS5 Logo" />
 
   <h1>Game Time for Grown Ups</h1>
 
@@ -106,14 +100,12 @@
 
   <div id="status"></div>
 
-  <div style="text-align: center; margin: 20px 0;">
-    <button id="resetButton">Reset for New Week</button>
-  </div>
-
   <h2>Combined Availability</h2>
   <div id="combinedResults">
     <!-- Live combined data will show here -->
   </div>
+
+  <button id="resetButton">Reset for New Week</button>
 
   <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -143,6 +135,7 @@
     const availabilityForm = document.getElementById("availabilityForm");
     const statusDiv = document.getElementById("status");
     const combinedResults = document.getElementById("combinedResults");
+    const resetButton = document.getElementById("resetButton");
 
     function buildForm() {
       formBody.innerHTML = "";
@@ -203,9 +196,6 @@
       }
 
       const table = document.createElement("table");
-      table.style.borderCollapse = "collapse";
-      table.style.width = "100%";
-
       const thead = document.createElement("thead");
       const headerRow = document.createElement("tr");
       headerRow.appendChild(document.createElement("th"));
@@ -253,17 +243,23 @@
       statusDiv.textContent = "";
     });
 
-    // Reset availability for all users
-    document.getElementById("resetButton").addEventListener("click", () => {
-      if (confirm("Are you sure you want to reset everyone's availability for the new week?")) {
-        db.ref("availability").remove()
+    resetButton.addEventListener("click", () => {
+      if (confirm("Are you sure you want to reset all availability for a new week?")) {
+        const updates = {};
+        for (const user of users) {
+          for (const day of days) {
+            for (const slot of slots) {
+              updates[`availability/${user}/${day}_${slot}`] = false;
+            }
+          }
+        }
+        db.ref().update(updates)
           .then(() => {
-            statusDiv.textContent = "All availability has been reset for the new week.";
-            buildForm();
+            statusDiv.textContent = "Availability has been reset for everyone.";
             loadUserData(userSelect.value);
           })
           .catch(err => {
-            statusDiv.textContent = "Error resetting availability: " + err;
+            statusDiv.textContent = "Error resetting data: " + err;
           });
       }
     });
