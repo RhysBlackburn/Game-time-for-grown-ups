@@ -16,6 +16,7 @@
     h1 {
       text-align: center;
       color: #61dafb;
+      font-size: 1.8rem; /* smaller title */
     }
     label {
       display: inline-block;
@@ -27,6 +28,11 @@
     }
     select {
       padding: 5px;
+      background-color: #002244; /* dark blue */
+      color: white;
+      border: none;
+      border-radius: 3px;
+      width: 100%;
     }
     table {
       width: 100%;
@@ -52,6 +58,9 @@
       width: 100%;
       margin-top: 10px;
     }
+    #resetButton {
+      background-color: #e03b3b; /* red */
+    }
     #status {
       text-align: center;
       margin-top: 10px;
@@ -67,7 +76,7 @@
 </head>
 <body>
 
-  <img id="logo" src="https://upload.wikimedia.org/wikipedia/commons/thumb/4/4e/PlayStation_logo.svg/256px-PlayStation_logo.svg.png" alt="PS5 Logo" />
+  <img id="logo" src="https://www.pinpng.com/pngs/m/152-1527351_02-oct-2014-playstation-logo-white-hd-png.png" alt="PS5 Logo" />
 
   <h1>Game Time for Grown Ups</h1>
 
@@ -244,29 +253,16 @@
     });
 
     resetButton.addEventListener("click", () => {
-      if (confirm("Are you sure you want to reset all availability for a new week?")) {
-        const updates = {};
-        for (const user of users) {
-          for (const day of days) {
-            for (const slot of slots) {
-              updates[`availability/${user}/${day}_${slot}`] = false;
-            }
-          }
-        }
-        db.ref().update(updates)
-          .then(() => {
-            statusDiv.textContent = "Availability has been reset for everyone.";
-            loadUserData(userSelect.value);
-          })
-          .catch(err => {
-            statusDiv.textContent = "Error resetting data: " + err;
-          });
+      if (confirm("Are you sure you want to reset all availability for the new week?")) {
+        users.forEach(user => {
+          db.ref(`availability/${user}`).set({});
+        });
+        statusDiv.textContent = "All availability has been reset for the new week.";
       }
     });
 
     buildForm();
     loadUserData(userSelect.value);
   </script>
-
 </body>
 </html>
