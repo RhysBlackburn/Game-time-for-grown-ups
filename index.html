@@ -13,20 +13,24 @@
       background: #003a78;
       color: white;
     }
+
     h1 {
       text-align: center;
       font-size: 1.8rem;
       margin-bottom: 0.3em;
     }
+
     .logo {
       display: block;
       margin: 0 auto 20px auto;
       max-width: 180px;
     }
+
     label {
       display: inline-block;
       margin-right: 10px;
     }
+
     .user-select {
       margin-bottom: 20px;
       font-weight: bold;
@@ -34,6 +38,7 @@
       padding: 8px 12px;
       border-radius: 6px;
     }
+
     select {
       background-color: #0b64bf;
       color: white;
@@ -42,6 +47,7 @@
       font-weight: bold;
       border-radius: 4px;
     }
+
     table {
       width: 100%;
       border-collapse: collapse;
@@ -50,18 +56,21 @@
       border-radius: 6px;
       overflow: hidden;
     }
+
     th, td {
       border: 1px solid #003a78;
       padding: 8px;
       text-align: center;
     }
+
     th {
       background: #0f7eea;
     }
-    .day-col {
-      font-size: 0.85rem;
-      width: 90px;
+
+    .day-slot-label {
+      font-size: 0.8rem;
     }
+
     button {
       width: 100%;
       padding: 12px;
@@ -72,56 +81,75 @@
       cursor: pointer;
       margin-bottom: 15px;
     }
+
     #saveBtn {
       background-color: #4CAF50;
     }
+
     #resetBtn {
       background-color: #d9534f;
     }
+
     #status {
       text-align: center;
       margin-top: 10px;
       font-weight: bold;
     }
+
     #combinedResults table {
       background-color: #0b64bf;
       color: white;
-      font-size: 0.9rem;
+      animation: fadeIn 0.4s ease-in;
     }
-    .locked-in {
-      background-color: gold !important;
+
+    .highlight-all {
+      background-color: #28a745;
     }
-    .green-message {
-      color: #7CFC00;
+
+    .tick {
+      color: white;
+      font-size: 1.2em;
     }
-    #chatContainer {
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    #chatBox {
       background-color: #0b64bf;
       padding: 10px;
       border-radius: 6px;
-      margin-bottom: 20px;
+      margin-top: 20px;
     }
+
     #messages {
       max-height: 150px;
       overflow-y: auto;
       margin-bottom: 10px;
-      background-color: #003a78;
+      background: rgba(255,255,255,0.05);
       padding: 10px;
-      border-radius: 6px;
+      border-radius: 4px;
     }
-    #messages div {
+
+    .message {
       margin-bottom: 5px;
     }
-    #chatInput {
-      width: 100%;
-      padding: 8px;
-      border: none;
-      border-radius: 5px;
-    }
+
+input[type="text"] {
+  width: calc(100% - 4px);
+  box-sizing: border-box;
+  padding: 10px;
+  border: none;
+  border-radius: 5px;
+  font-size: 1rem;
+}
+
   </style>
 </head>
 <body>
 
-<img class="logo" src="https://www.highsnobiety.com/static-assets/dato/1682552232-playstation-5-release-date-info-00.jpg" alt="PS5 Logo" />
+<img class="logo" src="https://www.highsnobiety.com/static-assets/dato/1682552232-playstation-5-release-date-info-00.jpg" />
 
 <h1>Game Time for Grown Ups</h1>
 
@@ -151,17 +179,16 @@
 
 <div id="status"></div>
 
-<div id="combinedContainer" style="display: none;">
+<div id="combinedSection" style="display: none;">
   <h2>Combined Availability</h2>
   <div id="combinedResults"></div>
   <button id="resetBtn" type="button">Reset Week</button>
 </div>
 
-<!-- Chat -->
-<div id="chatContainer">
-  <h2>Group Chat</h2>
+<div id="chatBox">
+  <h3>Group Chat</h3>
   <div id="messages"></div>
-  <input type="text" id="chatInput" placeholder="Enter message and press Enter" />
+  <input type="text" id="chatInput" placeholder="Type a message and press Enter..." />
 </div>
 
 <!-- Firebase SDK -->
@@ -176,8 +203,7 @@
     projectId: "game-time-for-grown-ups",
     storageBucket: "game-time-for-grown-ups.firebasestorage.app",
     messagingSenderId: "240776591169",
-    appId: "1:240776591169:web:ecd7125da1acf789ed93c0",
-    measurementId: "G-XFKFZT1FMG"
+    appId: "1:240776591169:web:ecd7125da1acf789ed93c0"
   };
 
   firebase.initializeApp(firebaseConfig);
@@ -192,8 +218,8 @@
   const availabilityForm = document.getElementById("availabilityForm");
   const statusDiv = document.getElementById("status");
   const combinedResults = document.getElementById("combinedResults");
+  const combinedSection = document.getElementById("combinedSection");
   const resetBtn = document.getElementById("resetBtn");
-  const combinedContainer = document.getElementById("combinedContainer");
 
   function buildForm() {
     formBody.innerHTML = "";
@@ -202,6 +228,7 @@
       const dayTd = document.createElement("td");
       dayTd.textContent = day;
       tr.appendChild(dayTd);
+
       for (const slot of slots) {
         const td = document.createElement("td");
         const checkbox = document.createElement("input");
@@ -238,64 +265,50 @@
     }
     db.ref(`availability/${user}`).set(userData).then(() => {
       statusDiv.textContent = "Availability saved!";
+    }).catch(err => {
+      statusDiv.textContent = "Error saving data: " + err;
     });
   });
 
   function showCombinedData(allData) {
-    combinedResults.innerHTML = "";
-
-    if (!allData) {
-      combinedContainer.style.display = "none";
+    if (!allData || Object.keys(allData).length === 0) {
+      combinedSection.style.display = "none";
       return;
     }
 
-    combinedContainer.style.display = "block";
+    combinedSection.style.display = "block";
+
     const table = document.createElement("table");
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
-
-    const thDay = document.createElement("th");
-    thDay.textContent = "Day/Slot";
-    thDay.className = "day-col";
-    headerRow.appendChild(thDay);
-
+    headerRow.appendChild(document.createElement("th")); // empty corner cell
     for (const user of users) {
       const th = document.createElement("th");
       th.textContent = user;
       headerRow.appendChild(th);
     }
-
-    const thCount = document.createElement("th");
-    thCount.textContent = "Available";
-    headerRow.appendChild(thCount);
-
-    const thLock = document.createElement("th");
-    thLock.textContent = "";
-    headerRow.appendChild(thLock);
-
+    const countTh = document.createElement("th");
+    countTh.textContent = "Available";
+    headerRow.appendChild(countTh);
     thead.appendChild(headerRow);
     table.appendChild(thead);
 
     const tbody = document.createElement("tbody");
-
     for (const day of days) {
       for (const slot of slots) {
-        const rowKey = `${day}_${slot}`;
         const tr = document.createElement("tr");
-        tr.setAttribute("data-key", rowKey);
+        const labelTd = document.createElement("td");
+        labelTd.textContent = `${day} ${slot}`;
+        labelTd.className = "day-slot-label";
+        tr.appendChild(labelTd);
 
-        const tdDaySlot = document.createElement("td");
-        tdDaySlot.textContent = `${day} ${slot}`;
-        tdDaySlot.className = "day-col";
-        tr.appendChild(tdDaySlot);
-
-        let availableCount = 0;
+        let count = 0;
         for (const user of users) {
           const td = document.createElement("td");
-          const available = allData[user] && allData[user][rowKey];
+          const available = allData[user] && allData[user][`${day}_${slot}`];
           if (available) {
-            td.innerHTML = "✔️";
-            availableCount++;
+            td.innerHTML = `<span class="tick">✔️</span>`;
+            count++;
           } else {
             td.textContent = "";
           }
@@ -303,43 +316,20 @@
         }
 
         const countTd = document.createElement("td");
-        countTd.textContent = availableCount;
-        if (availableCount === 4) tr.style.backgroundColor = "#228B22";
+        countTd.textContent = count;
         tr.appendChild(countTd);
 
-        const lockTd = document.createElement("td");
-        const lockBtn = document.createElement("button");
-        lockBtn.textContent = "Lock in?";
-        lockBtn.style.width = "100%";
-        lockBtn.onclick = () => {
-          const ref = db.ref(`lockins/${rowKey}`);
-          ref.once("value").then(snapshot => {
-            if (snapshot.val()) {
-              ref.remove();
-              statusDiv.textContent = "";
-            } else {
-              ref.set(true);
-              statusDiv.innerHTML = `<span class="green-message">Let’s f***ing go!</span>`;
-            }
-          });
-        };
-        lockTd.appendChild(lockBtn);
-        tr.appendChild(lockTd);
+        if (count === 4) {
+          tr.classList.add("highlight-all");
+        }
 
         tbody.appendChild(tr);
       }
     }
 
     table.appendChild(tbody);
+    combinedResults.innerHTML = "";
     combinedResults.appendChild(table);
-
-    db.ref("lockins").once("value").then(snapshot => {
-      const lockedRows = snapshot.val() || {};
-      for (const key in lockedRows) {
-        const row = document.querySelector(`tr[data-key="${key}"]`);
-        if (row) row.classList.add("locked-in");
-      }
-    });
   }
 
   db.ref("availability").on("value", snapshot => {
@@ -351,40 +341,48 @@
     statusDiv.textContent = "";
   });
 
-  resetBtn.addEventListener("click", () => {
-    if (confirm("Are you sure you want to reset everything?")) {
-      users.forEach(user => db.ref(`availability/${user}`).remove());
-      db.ref("chat").remove();
-      db.ref("lockins").remove();
-      statusDiv.textContent = "All availability and chat has been reset.";
-      buildForm();
-      document.getElementById("messages").innerHTML = "";
-    }
-  });
+resetBtn.addEventListener("click", () => {
+  if (confirm("Are you sure you want to reset all availability and clear the chat for the week?")) {
+    users.forEach(user => {
+      db.ref(`availability/${user}`).remove();
+    });
+    db.ref("chat").remove(); // Delete chat messages
+    statusDiv.textContent = "All availability and chat messages have been reset.";
+    buildForm();
+    messagesDiv.innerHTML = ""; // Clear chat box visually
+  }
+});
 
-  // Chat
-  const messagesDiv = document.getElementById("messages");
+
+  // Build the form initially
+  buildForm();
+  loadUserData(userSelect.value);
+
+  // Chat setup
   const chatInput = document.getElementById("chatInput");
+  const messagesDiv = document.getElementById("messages");
 
-  chatInput.addEventListener("keypress", e => {
-    if (e.key === "Enter" && chatInput.value.trim()) {
-      const msg = chatInput.value.trim();
-      const name = userSelect.value;
-      db.ref("chat").push({ name, msg });
+  chatInput.addEventListener("keypress", function (e) {
+    if (e.key === "Enter" && chatInput.value.trim() !== "") {
+      const user = userSelect.value;
+      const message = chatInput.value.trim();
+      const timestamp = Date.now();
+      db.ref("chat").push({ user, message, timestamp });
       chatInput.value = "";
     }
   });
 
-  db.ref("chat").on("child_added", snapshot => {
-    const { name, msg } = snapshot.val();
-    const div = document.createElement("div");
-    div.textContent = `${name}: ${msg}`;
-    messagesDiv.appendChild(div);
+  db.ref("chat").limitToLast(50).on("value", snapshot => {
+    messagesDiv.innerHTML = "";
+    snapshot.forEach(child => {
+      const data = child.val();
+      const div = document.createElement("div");
+      div.className = "message";
+      div.textContent = `${data.user}: ${data.message}`;
+      messagesDiv.appendChild(div);
+    });
     messagesDiv.scrollTop = messagesDiv.scrollHeight;
   });
-
-  buildForm();
-  loadUserData(userSelect.value);
 </script>
 
 </body>
