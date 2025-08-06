@@ -15,7 +15,7 @@
     }
     h1 {
       text-align: center;
-      font-size: 1.6rem;
+      font-size: 1.8rem;
       margin-bottom: 0.3em;
     }
     .logo {
@@ -52,12 +52,15 @@
     }
     th, td {
       border: 1px solid #003a78;
-      padding: 6px;
+      padding: 8px;
       text-align: center;
-      font-size: 0.9rem;
     }
     th {
       background: #0f7eea;
+    }
+    .day-col {
+      font-size: 0.85rem;
+      width: 90px;
     }
     button {
       width: 100%;
@@ -80,58 +83,51 @@
       margin-top: 10px;
       font-weight: bold;
     }
-    #combinedSection {
-      display: none;
+    #combinedResults table {
+      background-color: #0b64bf;
+      color: white;
+      font-size: 0.9rem;
     }
     .locked-in {
       background-color: gold !important;
     }
-    .all-available {
-      background-color: green !important;
-      color: white;
+    .green-message {
+      color: #7CFC00;
     }
-    .tick {
-      color: white;
-    }
-    #chatBox {
-      margin-top: 30px;
-    }
-    #chatMessages {
+    #chatContainer {
       background-color: #0b64bf;
       padding: 10px;
-      height: 120px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+    }
+    #messages {
+      max-height: 150px;
       overflow-y: auto;
       margin-bottom: 10px;
+      background-color: #003a78;
+      padding: 10px;
       border-radius: 6px;
     }
+    #messages div {
+      margin-bottom: 5px;
+    }
     #chatInput {
-      width: calc(100% - 90px);
+      width: 100%;
       padding: 8px;
       border: none;
-      border-radius: 4px;
-      margin-right: 10px;
-    }
-    #sendBtn {
-      width: 70px;
-      padding: 8px;
-      background-color: #4CAF50;
-      border: none;
-      color: white;
-      border-radius: 4px;
-    }
-    .day-slot {
-      font-size: 0.8rem;
+      border-radius: 5px;
     }
   </style>
 </head>
 <body>
 
-<img class="logo" src="https://www.highsnobiety.com/static-assets/dato/1682552232-playstation-5-release-date-info-00.jpg" />
+<img class="logo" src="https://www.highsnobiety.com/static-assets/dato/1682552232-playstation-5-release-date-info-00.jpg" alt="PS5 Logo" />
+
 <h1>Game Time for Grown Ups</h1>
 
-<div class="user-select">
+<div class="user-select" aria-label="Select your name">
   Select your name:
-  <select id="userSelect">
+  <select id="userSelect" aria-label="User name select">
     <option value="Rhys">Rhys</option>
     <option value="Kris">Kris</option>
     <option value="Matty">Matty</option>
@@ -155,219 +151,240 @@
 
 <div id="status"></div>
 
-<div id="combinedSection">
+<div id="combinedContainer" style="display: none;">
   <h2>Combined Availability</h2>
   <div id="combinedResults"></div>
   <button id="resetBtn" type="button">Reset Week</button>
 </div>
 
-<div id="chatBox">
+<!-- Chat -->
+<div id="chatContainer">
   <h2>Group Chat</h2>
-  <div id="chatMessages"></div>
-  <input type="text" id="chatInput" placeholder="Enter message" />
-  <button id="sendBtn">Send</button>
+  <div id="messages"></div>
+  <input type="text" id="chatInput" placeholder="Enter message and press Enter" />
 </div>
-
-<canvas id="confetti-canvas" style="position: fixed; pointer-events: none; top: 0; left: 0; width: 100%; height: 100%;"></canvas>
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyD8Za1qEgeVqQY-ZPoAVxbQxNk2gIX_2ic",
-  authDomain: "game-time-for-grown-ups.firebaseapp.com",
-  databaseURL: "https://game-time-for-grown-ups-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "game-time-for-grown-ups",
-  storageBucket: "game-time-for-grown-ups.firebasestorage.app",
-  messagingSenderId: "240776591169",
-  appId: "1:240776591169:web:ecd7125da1acf789ed93c0",
-  measurementId: "G-XFKFZT1FMG"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
+  const firebaseConfig = {
+    apiKey: "AIzaSyD8Za1qEgeVqQY-ZPoAVxbQxNk2gIX_2ic",
+    authDomain: "game-time-for-grown-ups.firebaseapp.com",
+    databaseURL: "https://game-time-for-grown-ups-default-rtdb.europe-west1.firebasedatabase.app",
+    projectId: "game-time-for-grown-ups",
+    storageBucket: "game-time-for-grown-ups.firebasestorage.app",
+    messagingSenderId: "240776591169",
+    appId: "1:240776591169:web:ecd7125da1acf789ed93c0",
+    measurementId: "G-XFKFZT1FMG"
+  };
 
-const users = ["Rhys", "Kris", "Matty", "Granty"];
-const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-const slots = ["Afternoon", "Evening"];
+  firebase.initializeApp(firebaseConfig);
+  const db = firebase.database();
 
-const formBody = document.getElementById("formBody");
-const userSelect = document.getElementById("userSelect");
-const availabilityForm = document.getElementById("availabilityForm");
-const statusDiv = document.getElementById("status");
-const combinedResults = document.getElementById("combinedResults");
-const resetBtn = document.getElementById("resetBtn");
-const combinedSection = document.getElementById("combinedSection");
-const chatMessages = document.getElementById("chatMessages");
-const chatInput = document.getElementById("chatInput");
-const sendBtn = document.getElementById("sendBtn");
+  const users = ["Rhys", "Kris", "Matty", "Granty"];
+  const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  const slots = ["Afternoon", "Evening"];
 
-function buildForm() {
-  formBody.innerHTML = "";
-  for (const day of days) {
-    const tr = document.createElement("tr");
-    const dayTd = document.createElement("td");
-    dayTd.textContent = day;
-    tr.appendChild(dayTd);
-    for (const slot of slots) {
-      const td = document.createElement("td");
-      const checkbox = document.createElement("input");
-      checkbox.type = "checkbox";
-      checkbox.name = `${day}_${slot}`;
-      td.appendChild(checkbox);
-      tr.appendChild(td);
+  const formBody = document.getElementById("formBody");
+  const userSelect = document.getElementById("userSelect");
+  const availabilityForm = document.getElementById("availabilityForm");
+  const statusDiv = document.getElementById("status");
+  const combinedResults = document.getElementById("combinedResults");
+  const resetBtn = document.getElementById("resetBtn");
+  const combinedContainer = document.getElementById("combinedContainer");
+
+  function buildForm() {
+    formBody.innerHTML = "";
+    for (const day of days) {
+      const tr = document.createElement("tr");
+      const dayTd = document.createElement("td");
+      dayTd.textContent = day;
+      tr.appendChild(dayTd);
+      for (const slot of slots) {
+        const td = document.createElement("td");
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
+        checkbox.name = `${day}_${slot}`;
+        td.appendChild(checkbox);
+        tr.appendChild(td);
+      }
+      formBody.appendChild(tr);
     }
-    formBody.appendChild(tr);
   }
-}
 
-function loadUserData(user) {
-  db.ref(`availability/${user}`).once("value").then(snapshot => {
-    const data = snapshot.val() || {};
+  function loadUserData(user) {
+    db.ref(`availability/${user}`).once("value").then(snapshot => {
+      const data = snapshot.val() || {};
+      for (const day of days) {
+        for (const slot of slots) {
+          const checkbox = availabilityForm.elements[`${day}_${slot}`];
+          checkbox.checked = !!data[`${day}_${slot}`];
+        }
+      }
+    });
+  }
+
+  availabilityForm.addEventListener("submit", e => {
+    e.preventDefault();
+    const user = userSelect.value;
+    const userData = {};
     for (const day of days) {
       for (const slot of slots) {
         const checkbox = availabilityForm.elements[`${day}_${slot}`];
-        checkbox.checked = !!data[`${day}_${slot}`];
+        userData[`${day}_${slot}`] = checkbox.checked;
       }
     }
+    db.ref(`availability/${user}`).set(userData).then(() => {
+      statusDiv.textContent = "Availability saved!";
+    });
   });
-}
 
-availabilityForm.addEventListener("submit", e => {
-  e.preventDefault();
-  const user = userSelect.value;
-  const userData = {};
-  for (const day of days) {
-    for (const slot of slots) {
-      const checkbox = availabilityForm.elements[`${day}_${slot}`];
-      userData[`${day}_${slot}`] = checkbox.checked;
+  function showCombinedData(allData) {
+    combinedResults.innerHTML = "";
+
+    if (!allData) {
+      combinedContainer.style.display = "none";
+      return;
     }
-  }
-  db.ref(`availability/${user}`).set(userData)
-    .then(() => statusDiv.textContent = "Availability saved!");
-});
 
-function showCombinedData(allData) {
-  if (!allData || Object.keys(allData).length === 0) {
-    combinedSection.style.display = "none";
-    return;
-  }
+    combinedContainer.style.display = "block";
+    const table = document.createElement("table");
+    const thead = document.createElement("thead");
+    const headerRow = document.createElement("tr");
 
-  combinedSection.style.display = "block";
-  const table = document.createElement("table");
-  const thead = document.createElement("thead");
-  const headerRow = document.createElement("tr");
-  headerRow.innerHTML = `<th></th>${users.map(u => `<th>${u}</th>`).join("")}<th>#</th><th></th>`;
-  thead.appendChild(headerRow);
-  table.appendChild(thead);
+    const thDay = document.createElement("th");
+    thDay.textContent = "Day/Slot";
+    thDay.className = "day-col";
+    headerRow.appendChild(thDay);
 
-  const tbody = document.createElement("tbody");
+    for (const user of users) {
+      const th = document.createElement("th");
+      th.textContent = user;
+      headerRow.appendChild(th);
+    }
 
-  for (const day of days) {
-    for (const slot of slots) {
-      const tr = document.createElement("tr");
-      const key = `${day}_${slot}`;
-      const labelTd = document.createElement("td");
-      labelTd.className = "day-slot";
-      labelTd.textContent = `${day} ${slot}`;
-      tr.appendChild(labelTd);
+    const thCount = document.createElement("th");
+    thCount.textContent = "Available";
+    headerRow.appendChild(thCount);
 
-      let count = 0;
-      for (const user of users) {
-        const td = document.createElement("td");
-        const available = allData[user]?.[key];
-        if (available) {
-          td.innerHTML = '<span class="tick">✔️</span>';
-          count++;
+    const thLock = document.createElement("th");
+    thLock.textContent = "";
+    headerRow.appendChild(thLock);
+
+    thead.appendChild(headerRow);
+    table.appendChild(thead);
+
+    const tbody = document.createElement("tbody");
+
+    for (const day of days) {
+      for (const slot of slots) {
+        const rowKey = `${day}_${slot}`;
+        const tr = document.createElement("tr");
+        tr.setAttribute("data-key", rowKey);
+
+        const tdDaySlot = document.createElement("td");
+        tdDaySlot.textContent = `${day} ${slot}`;
+        tdDaySlot.className = "day-col";
+        tr.appendChild(tdDaySlot);
+
+        let availableCount = 0;
+        for (const user of users) {
+          const td = document.createElement("td");
+          const available = allData[user] && allData[user][rowKey];
+          if (available) {
+            td.innerHTML = "✔️";
+            availableCount++;
+          } else {
+            td.textContent = "";
+          }
+          tr.appendChild(td);
         }
-        tr.appendChild(td);
+
+        const countTd = document.createElement("td");
+        countTd.textContent = availableCount;
+        if (availableCount === 4) tr.style.backgroundColor = "#228B22";
+        tr.appendChild(countTd);
+
+        const lockTd = document.createElement("td");
+        const lockBtn = document.createElement("button");
+        lockBtn.textContent = "Lock in?";
+        lockBtn.style.width = "100%";
+        lockBtn.onclick = () => {
+          const ref = db.ref(`lockins/${rowKey}`);
+          ref.once("value").then(snapshot => {
+            if (snapshot.val()) {
+              ref.remove();
+              statusDiv.textContent = "";
+            } else {
+              ref.set(true);
+              statusDiv.innerHTML = `<span class="green-message">Let’s f***ing go!</span>`;
+            }
+          });
+        };
+        lockTd.appendChild(lockBtn);
+        tr.appendChild(lockTd);
+
+        tbody.appendChild(tr);
       }
-
-      const countTd = document.createElement("td");
-      countTd.textContent = count;
-      tr.appendChild(countTd);
-
-      const lockTd = document.createElement("td");
-      const lockBtn = document.createElement("button");
-      lockBtn.textContent = "Lock in?";
-      lockBtn.style.padding = "6px";
-      lockBtn.onclick = () => {
-        db.ref(`locked/${key}`).set(true);
-        triggerConfetti();
-        alert("Let’s fucking go!");
-      };
-      lockTd.appendChild(lockBtn);
-      tr.appendChild(lockTd);
-
-      if (count === 4) tr.classList.add("all-available");
-
-      db.ref(`locked/${key}`).once("value", snap => {
-        if (snap.val()) tr.classList.add("locked-in");
-      });
-
-      tbody.appendChild(tr);
     }
-  }
 
-  table.appendChild(tbody);
-  combinedResults.innerHTML = "";
-  combinedResults.appendChild(table);
-}
+    table.appendChild(tbody);
+    combinedResults.appendChild(table);
 
-db.ref("availability").on("value", snapshot => {
-  showCombinedData(snapshot.val());
-});
-
-userSelect.addEventListener("change", () => {
-  loadUserData(userSelect.value);
-  statusDiv.textContent = "";
-});
-
-resetBtn.addEventListener("click", () => {
-  if (confirm("Are you sure you want to reset everything for the week?")) {
-    users.forEach(user => db.ref(`availability/${user}`).remove());
-    db.ref("locked").remove();
-    db.ref("chat").remove();
-    chatMessages.innerHTML = "";
-    statusDiv.textContent = "All availability and chat has been reset.";
-    buildForm();
-  }
-});
-
-// Chat
-sendBtn.addEventListener("click", () => {
-  const user = userSelect.value;
-  const msg = chatInput.value.trim();
-  if (!msg) return;
-  const time = Date.now();
-  db.ref(`chat/${time}`).set({ user, msg });
-  chatInput.value = "";
-});
-
-db.ref("chat").on("value", snapshot => {
-  const data = snapshot.val();
-  chatMessages.innerHTML = "";
-  if (data) {
-    Object.values(data).forEach(({ user, msg }) => {
-      const p = document.createElement("p");
-      p.innerHTML = `<strong>${user}:</strong> ${msg}`;
-      chatMessages.appendChild(p);
+    db.ref("lockins").once("value").then(snapshot => {
+      const lockedRows = snapshot.val() || {};
+      for (const key in lockedRows) {
+        const row = document.querySelector(`tr[data-key="${key}"]`);
+        if (row) row.classList.add("locked-in");
+      }
     });
   }
-});
 
-function triggerConfetti() {
-  confetti({
-    particleCount: 100,
-    spread: 100,
-    origin: { y: 0.6 },
+  db.ref("availability").on("value", snapshot => {
+    showCombinedData(snapshot.val());
   });
-}
 
-buildForm();
-loadUserData(userSelect.value);
+  userSelect.addEventListener("change", () => {
+    loadUserData(userSelect.value);
+    statusDiv.textContent = "";
+  });
+
+  resetBtn.addEventListener("click", () => {
+    if (confirm("Are you sure you want to reset everything?")) {
+      users.forEach(user => db.ref(`availability/${user}`).remove());
+      db.ref("chat").remove();
+      db.ref("lockins").remove();
+      statusDiv.textContent = "All availability and chat has been reset.";
+      buildForm();
+      document.getElementById("messages").innerHTML = "";
+    }
+  });
+
+  // Chat
+  const messagesDiv = document.getElementById("messages");
+  const chatInput = document.getElementById("chatInput");
+
+  chatInput.addEventListener("keypress", e => {
+    if (e.key === "Enter" && chatInput.value.trim()) {
+      const msg = chatInput.value.trim();
+      const name = userSelect.value;
+      db.ref("chat").push({ name, msg });
+      chatInput.value = "";
+    }
+  });
+
+  db.ref("chat").on("child_added", snapshot => {
+    const { name, msg } = snapshot.val();
+    const div = document.createElement("div");
+    div.textContent = `${name}: ${msg}`;
+    messagesDiv.appendChild(div);
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  });
+
+  buildForm();
+  loadUserData(userSelect.value);
 </script>
 
 </body>
