@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Game Time for Grown Ups</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -18,6 +19,8 @@
       text-align: center;
       font-size: 1.8rem;
       margin-bottom: 0.3em;
+      font-family: 'Orbitron', sans-serif;
+      letter-spacing: 1px;
     }
 
     .logo {
@@ -103,7 +106,11 @@
     }
 
     .highlight-all {
-      background-color: #28a745;
+      background-color: #28a745 !important;
+    }
+
+    .highlight-three {
+      background-color: #f1c40f !important;
     }
 
     .tick {
@@ -136,20 +143,24 @@
       margin-bottom: 5px;
     }
 
-input[type="text"] {
-  width: calc(100% - 4px);
-  box-sizing: border-box;
-  padding: 10px;
-  border: none;
-  border-radius: 5px;
-  font-size: 1rem;
-}
+    input[type="text"] {
+      width: calc(100% - 4px);
+      box-sizing: border-box;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+      font-size: 1rem;
+    }
+
+    .small-header th {
+      font-size: 0.75rem;
+    }
 
   </style>
 </head>
 <body>
 
-<img class="logo" src="https://www.highsnobiety.com/static-assets/dato/1682552232-playstation-5-release-date-info-00.jpg" />
+<img class="logo" src="https://www.highsnobiety.com/static-assets/dato/1682552232-playstation-5-release-date-info-00.jpg" alt="PS5 logo"/>
 
 <h1>Game Time for Grown Ups</h1>
 
@@ -160,6 +171,8 @@ input[type="text"] {
     <option value="Kris">Kris</option>
     <option value="Matty">Matty</option>
     <option value="Granty">Granty</option>
+    <option value="Ell">Ell</option>
+    <option value="Azz">Azz</option>
   </select>
 </div>
 
@@ -201,7 +214,7 @@ input[type="text"] {
     authDomain: "game-time-for-grown-ups.firebaseapp.com",
     databaseURL: "https://game-time-for-grown-ups-default-rtdb.europe-west1.firebasedatabase.app",
     projectId: "game-time-for-grown-ups",
-    storageBucket: "game-time-for-grown-ups.firebasestorage.app",
+    storageBucket: "game-time-for-grown-ups.appspot.com",
     messagingSenderId: "240776591169",
     appId: "1:240776591169:web:ecd7125da1acf789ed93c0"
   };
@@ -209,7 +222,7 @@ input[type="text"] {
   firebase.initializeApp(firebaseConfig);
   const db = firebase.database();
 
-  const users = ["Rhys", "Kris", "Matty", "Granty"];
+  const users = ["Rhys", "Kris", "Matty", "Granty", "Ell", "Azz"];
   const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   const slots = ["Afternoon", "Evening"];
 
@@ -281,14 +294,18 @@ input[type="text"] {
     const table = document.createElement("table");
     const thead = document.createElement("thead");
     const headerRow = document.createElement("tr");
+    headerRow.classList.add("small-header");
     headerRow.appendChild(document.createElement("th")); // empty corner cell
+
     for (const user of users) {
       const th = document.createElement("th");
       th.textContent = user;
+      th.style.fontSize = "0.75rem";
       headerRow.appendChild(th);
     }
+
     const countTh = document.createElement("th");
-    countTh.textContent = "Available";
+    countTh.textContent = "#";
     headerRow.appendChild(countTh);
     thead.appendChild(headerRow);
     table.appendChild(thead);
@@ -319,8 +336,10 @@ input[type="text"] {
         countTd.textContent = count;
         tr.appendChild(countTd);
 
-        if (count === 4) {
+        if (count >= 4) {
           tr.classList.add("highlight-all");
+        } else if (count === 3) {
+          tr.classList.add("highlight-three");
         }
 
         tbody.appendChild(tr);
@@ -341,18 +360,17 @@ input[type="text"] {
     statusDiv.textContent = "";
   });
 
-resetBtn.addEventListener("click", () => {
-  if (confirm("Are you sure you want to reset all availability and clear the chat for the week?")) {
-    users.forEach(user => {
-      db.ref(`availability/${user}`).remove();
-    });
-    db.ref("chat").remove(); // Delete chat messages
-    statusDiv.textContent = "All availability and chat messages have been reset.";
-    buildForm();
-    messagesDiv.innerHTML = ""; // Clear chat box visually
-  }
-});
-
+  resetBtn.addEventListener("click", () => {
+    if (confirm("Are you sure you want to reset all availability and clear the chat for the week?")) {
+      users.forEach(user => {
+        db.ref(`availability/${user}`).remove();
+      });
+      db.ref("chat").remove();
+      statusDiv.textContent = "All availability and chat messages have been reset.";
+      buildForm();
+      messagesDiv.innerHTML = "";
+    }
+  });
 
   // Build the form initially
   buildForm();
