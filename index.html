@@ -17,7 +17,7 @@
 
     h1 {
       text-align: center;
-      font-size: 1.6rem;
+      font-size: 1.5rem;
       margin-bottom: 0.3em;
       font-family: 'Orbitron', sans-serif;
       letter-spacing: 1px;
@@ -27,11 +27,6 @@
       display: block;
       margin: 0 auto 20px auto;
       max-width: 180px;
-    }
-
-    label {
-      display: inline-block;
-      margin-right: 10px;
     }
 
     .user-select {
@@ -103,6 +98,7 @@
       background-color: #0b64bf;
       color: white;
       animation: fadeIn 0.4s ease-in;
+      table-layout: fixed;
     }
 
     .highlight-all {
@@ -322,6 +318,7 @@
         let count = 0;
         for (const user of users) {
           const td = document.createElement("td");
+          td.style.width = `${100 / (users.length + 2)}%`;
           const available = allData[user] && allData[user][`${day}_${slot}`];
           if (available) {
             td.innerHTML = `<span class="tick">✔️</span>`;
